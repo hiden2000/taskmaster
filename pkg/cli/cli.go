@@ -29,8 +29,8 @@ func (c *CLI) Run() error {
 		if err != nil {
 			return fmt.Errorf("error reading input: %w", err)
 		}
-		input = strings.Trim(input, " ")
-
+		input = strings.TrimRight(input, "\n")
+		input = strings.Trim(input, "")
 		if input == "exit" {
 			break
 		}
