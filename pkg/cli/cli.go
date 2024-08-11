@@ -72,7 +72,7 @@ func (c *CLI) addTask(args []string) error {
 
 	title := args[0]
 	description := strings.Join(args[1:], " ")
-	newTask := task.NewTask(0, title, description, time.Now().Add(24*time.Hour))
+	newTask := task.NewTask(0, title, description, time.Time{})
 
 	err := c.storage.AddTask(newTask)
 	if err != nil {

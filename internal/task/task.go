@@ -15,6 +15,10 @@ type Task struct {
 }
 
 func NewTask(id int, title, description string, dueDate time.Time) *Task {
+	// デフォルトの期限を24時間に設定
+	if dueDate.IsZero() {
+		dueDate = time.Now().Add(24 * time.Hour)
+	}
 	return &Task{
 		ID:          id,
 		Title:       title,
@@ -43,5 +47,5 @@ func (t *Task) String() string {
 	} else if t.IsOverDue() {
 		status = "Overdue"
 	}
-	return fmt.Sprintf("Task %d %s [%s] (Due: %s)", t.ID, t.Title, status, t.DueDate.Format("2024-1-1"))
+	return fmt.Sprintf("Task %d %s [%s] (Due: %s)", t.ID, t.Title, status, t.DueDate.Format(time.RFC822))
 }
