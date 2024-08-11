@@ -20,26 +20,32 @@ func NewCLI(s *storage.Storage) *CLI {
 	return &CLI{storage: s}
 }
 
-func (c *CLI) Run() {
+func (c *CLI) Run() error {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
 		fmt.Print("taskmaster> ")
-		input, _ := reader.ReadString('\n')
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("error reading input: %w", err)
+		}
 		input = strings.Trim(input, " ")
 
 		if input == "exit" {
 			break
 		}
 
-		c.executeCommand(input)
+		if err := c.executeCommand(input); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 	}
+	return nil
 }
 
-func (c *CLI) executeCommand(input string) {
+func (c *CLI) executeCommand(input string) error {
 	parts := strings.Fields(input)
 	if len(parts) == 0 {
-		return
+		return nil
 	}
 
 	command := parts[0]
@@ -47,22 +53,21 @@ func (c *CLI) executeCommand(input string) {
 
 	switch command {
 	case "add":
-		c.addTask(args)
+		return c.addTask(args)
 	case "list":
-		c.listTasks()
+		return c.listTasks()
 	case "complete":
-		c.completeTask(args)
+		return c.completeTask(args)
 	case "delete":
-		c.deleteTask(args)
+		return c.deleteTask(args)
 	default:
-		fmt.Println("Unknown command. Available commands: add, list, complete, delete")
+		return fmt.Errorf("unknown command. Available commands: add, list, complete, delete")
 	}
 }
 
-func (c *CLI) addTask(args []string) {
+func (c *CLI) addTask(args []string) error {
 	if len(args) < 2 {
-		fmt.Println("Usage: add <title> <descrption>")
-		return
+		return fmt.Errorf("usage: add <title> <descrption>")
 	}
 
 	title := args[0]
@@ -71,69 +76,68 @@ func (c *CLI) addTask(args []string) {
 
 	err := c.storage.AddTask(newTask)
 	if err != nil {
-		fmt.Printf("Error adding task: %v\n", err)
-		return
+		return fmt.Errorf("error adding task: %v\n", err)
 	}
 
 	fmt.Printf("Task added: %s\n", newTask)
+	return nil
 }
 
-func (c *CLI) listTasks() {
+func (c *CLI) listTasks() error {
 	tasks := c.storage.ListTasks()
 	if len(tasks) == 0 {
 		fmt.Println("No tasks found.")
+		return nil
 	}
 
 	for _, t := range tasks {
 		fmt.Println(t)
 	}
+	return nil
 }
 
-func (c *CLI) completeTask(args []string) {
+func (c *CLI) completeTask(args []string) error {
 	if len(args) != 1 {
-		fmt.Println("Usage: complete <task_id>")
-		return
+		return fmt.Errorf("usage: complete <task_id>")
+
 	}
 
 	id, err := strconv.Atoi(args[0])
 	if err != nil {
-		fmt.Printf("Error: <task_id> must be integer, but %s given.", args[0])
-		return
+		return fmt.Errorf("error: <task_id> must be integer, but %s given.", args[0])
 	}
 
 	task, err := c.storage.GetTask(id)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
+		return fmt.Errorf("error getting task: %w", err)
 	}
 
 	task.Complete()
 	err = c.storage.UpdateTask(task)
 	if err != nil {
-		fmt.Printf("Error updating task: %v\n", err)
-		return
+		return fmt.Errorf("error updating task: %w\n", err)
 	}
 
 	fmt.Printf("Task completed: %s\n", task)
+	return nil
 }
 
-func (c *CLI) deleteTask(args []string) {
+func (c *CLI) deleteTask(args []string) error {
 
 	if len(args) != 1 {
-		fmt.Println("Usage: delete <task_id>")
-		return
+		return fmt.Errorf("usage: delete <task_id>")
 	}
 
 	id, err := strconv.Atoi(args[0])
 	if err != nil {
-		fmt.Printf("Error: <task_id> must be integer, but %s given.", args[0])
-		return
+		return fmt.Errorf("error: <task_id> must be integer, but %s given.", args[0])
 	}
 	err = c.storage.DeleteTask(id)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
+		return fmt.Errorf("error deleting task: %w", err)
+
 	}
 
 	fmt.Printf("Task %d deleted\n", id)
+	return nil
 }
